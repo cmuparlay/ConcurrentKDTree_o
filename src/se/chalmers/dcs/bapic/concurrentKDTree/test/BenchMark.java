@@ -487,10 +487,24 @@ public class BenchMark {
             memTree = Tools.getMemUsed();
             BenchMark();
 
+            //datastructure:
+            //threads:
+            //update_percent:
+            //index_size:
+            //throughput (Mop/s)
+
+            int update_percent = addPercent + removePercent;
+            double div_factor = 1000000;
+
             long memOnFinish = Tools.cleanMem(memTree);
             System.out.printf("Throughput = %.0f Ops/sec\n", throughput);
             System.out.printf("Memory-footprint of operations = %d bytes\n", memOnFinish);
             System.out.printf("Fairness = %.0f percent\n", fairness * 100);
+            throughput = throughput/div_factor;
+            System.out.printf("threads: %d \n", numberOfThreads);
+            System.out.printf("update_percent: %d \n", update_percent);
+            System.out.printf("index_size: %d \n", keyRange);
+            System.out.printf("throughput (Mop/s): %.3f \n", throughput);
         }
     }
 }
