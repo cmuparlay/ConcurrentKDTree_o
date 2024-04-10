@@ -47,6 +47,7 @@ public class RunOperations implements Runnable {
     AbstractIntegerDistribution z;
     int[] results, numberOfAdd, numberOfRemove;
     int[][] sanityAdds, sanityRemoves;
+    double[][] keys;
 
     /**
      *
@@ -62,7 +63,7 @@ public class RunOperations implements Runnable {
      * @throws IOException
      */
     public RunOperations(KDTreeADT s, int tId, int aP, int rP, int kR, int dim, int[] results,
-            int[][] sanityAdds, int[][] sanityRemoves, boolean testSanity, boolean linearizable)
+            int[][] sanityAdds, int[][] sanityRemoves, boolean testSanity, boolean linearizable, double[][] keys)
             throws IOException {
         this.testSanity = testSanity;
         this.linearizable = linearizable;
@@ -81,6 +82,7 @@ public class RunOperations implements Runnable {
         this.results = results;
         this.sanityAdds = sanityAdds;
         this.sanityRemoves = sanityRemoves;
+        this.keys = keys;
     }
 
     private void benchMarkRun() {
@@ -88,11 +90,7 @@ public class RunOperations implements Runnable {
 
         while ( ! RunController.stopFlag) {
             int chooseOperation = randOp.nextInt(100);
-            double[] key = new double[dimension];
-            for (int i = 0; i < dimension; i ++) {
-                key[i] = Tools.randomInRange(randKey, 0, keyRange);
-                // System.err.println(key[i]);
-            }
+            double[] key = keys[randOp.nextInt(keyRange)];
             try {
                 if (chooseOperation < addPercent) {
                     set.add(key, key);

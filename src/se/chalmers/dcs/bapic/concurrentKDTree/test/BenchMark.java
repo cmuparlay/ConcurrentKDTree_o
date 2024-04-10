@@ -29,6 +29,11 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 import se.chalmers.dcs.bapic.concurrentKDTree.KDTrees.*;
+import java.io.FileNotFoundException;
+import java.awt.Point;
+import java.util.Scanner;
+import java.util.ArrayList;
+import java.io.File;
 
 /**
  *
@@ -57,6 +62,45 @@ public class BenchMark {
     private static int[][] sanityRemoves;
     private static int[] presentKeys;
     private static KDTreeADT set;
+    public static double[][] keys;
+
+    // returns a list of points from file
+    public static double[][] loadPoints(/*String filename*/) {
+        ArrayList<double[]> points = new ArrayList<double[]>();
+        // try {
+          // Scanner myReader = new Scanner(new File(filename));
+          Scanner myReader = new Scanner(System.in);
+          String dataType = myReader.nextLine();
+          if(dataType.contains("3d") || dataType.contains("3D")) {
+            while (myReader.hasNext()) {
+              double[] point = new double[3];
+              point[0] = myReader.nextDouble();
+              point[1] = myReader.nextDouble();
+              point[2] = myReader.nextDouble();
+              points.add(point);
+              // points.add(new Point3D(myReader.nextDouble(), myReader.nextDouble(), myReader.nextDouble()));
+            }
+          } else {
+            while (myReader.hasNext()) {
+              double[] point = new double[2];
+              point[0] = myReader.nextDouble();
+              point[1] = myReader.nextDouble();
+              points.add(point);
+              // points.add(new Point(myReader.nextDouble(), myReader.nextDouble()));
+            }
+          }
+          myReader.close();
+        // } catch (FileNotFoundException e) {
+        //   System.out.println("An error occurred.");
+        //   e.printStackTrace();
+        // }
+        double[][] pointsCopy = new double[points.size()][points.get(0).length];
+        for(int i = 0; i < points.size(); i++)
+            for(int j = 0; j < points.get(0).length; j++)
+                pointsCopy[i][j] = points.get(i)[j];
+        System.out.println(pointsCopy.length);
+        return pointsCopy;
+    }
 
     private static void defineSet() {
         switch (setType) {
@@ -81,22 +125,23 @@ public class BenchMark {
     private static void initializeSet() {
         Random rd = new Random(0);
         int opIndex = 0;
+        keyRange = keys.length;
         try {
             // for (int j = 0; j < 1000000; j++) {
-            for (int j = 0; j < Math.min(3000000, keyRange); j ++) {
+            for (int j = 0; j < keyRange; j += 2) {
                 // for (int j = 0; j < (keyRange * dimension) / 2; j++) {
-                double[] key = new double[dimension];
+                double[] key = keys[j];
                 opIndex = 0;
-                for (int i = 0; i < dimension; i ++) {
-                    if (testSanity) {
-                        key[i] = rd.nextInt(keyRange);
-                        opIndex += key[i] * (int) Math.pow(keyRange, i);
-                    }
-                    else {
-                        key[i] = Tools.randomInRange(rd, 0, keyRange);
-                    }
+                // for (int i = 0; i < dimension; i ++) {
+                //     if (testSanity) {
+                //         key[i] = rd.nextInt(keyRange);
+                //         opIndex += key[i] * (int) Math.pow(keyRange, i);
+                //     }
+                //     else {
+                //         key[i] = Tools.randomInRange(rd, 0, keyRange);
+                //     }
 
-                }
+                // }
                 if (set.add(key, key) && testSanity) {
                     // System.err.println(Arrays.toString(key) + " => "+opIndex);
                     presentKeys[opIndex] ++;
@@ -109,6 +154,7 @@ public class BenchMark {
     }
 
     private static void InitializeTest(String[] args) {
+        keys = loadPoints();
         LongOpt[] longopts = new LongOpt[13];
 
         longopts[0] = new LongOpt("help", LongOpt.NO_ARGUMENT, null, 'h');
@@ -195,7 +241,7 @@ public class BenchMark {
 
                 case 'k':
                     arg = g.getOptarg();
-                    keyRange = Integer.parseInt(arg);
+                    keyRange = Integer.parseInt(arg); // unused
 
                     break;
 
@@ -213,6 +259,8 @@ public class BenchMark {
                     return;
             }
         }
+
+        keyRange = keys.length;
 
         if ((addPercent + removePercent + searchPercent) > 100) {
             System.err.println("(addPercent+removePercent+searchPercent) > 100");
@@ -237,7 +285,7 @@ public class BenchMark {
 
             for (int i = 0; i < threads.length; i ++) {
                 threads[i] = new Thread(new RunOperations(set, i, addPercent, removePercent, keyRange,
-                        dimension, results, sanityAdds, sanityRemoves, false, linearizable));
+                        dimension, results, sanityAdds, sanityRemoves, false, linearizable, keys));
             }
 
             for (Thread thread : threads) {
@@ -303,7 +351,7 @@ public class BenchMark {
 
             for (int i = 0; i < threads.length; i ++) {
                 threads[i] = new Thread(new RunOperations(set, i, addPercent, removePercent, keyRange,
-                        dimension, results, sanityAdds, sanityRemoves, true, linearizable));
+                        dimension, results, sanityAdds, sanityRemoves, true, linearizable, keys));
             }
 
             for (Thread thread : threads) {
@@ -380,7 +428,7 @@ public class BenchMark {
 
             for (int i = 0; i < threads.length; i ++) {
                 threads[i] = new Thread(new RunOperations(set, i, addPercent, removePercent, keyRange,
-                        dimension, results, sanityAdds, sanityRemoves, false, linearizable));
+                        dimension, results, sanityAdds, sanityRemoves, false, linearizable, keys));
             }
 
             for (Thread thread : threads) {
