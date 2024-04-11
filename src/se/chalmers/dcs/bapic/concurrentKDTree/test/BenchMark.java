@@ -551,7 +551,7 @@ public class BenchMark {
             throughput = throughput/div_factor;
             System.out.printf("threads: %d \n", numberOfThreads);
             System.out.printf("update_percent: %d \n", update_percent);
-            System.out.printf("index_size: %d \n", keyRange);
+            System.out.printf("index_size: %d \n", keyRange/2);
             System.out.printf("throughput (Mop/s): %.3f \n", throughput);
         }
     }
