@@ -58,6 +58,7 @@ public class BenchMark {
     private static double throughput;
     private static double fairness;
     private static int[] results;
+    private static long[] succAdd, succDel, failAdd, failDel;
     private static int[][] sanityAdds;
     private static int[][] sanityRemoves;
     private static int[] presentKeys;
@@ -142,10 +143,13 @@ public class BenchMark {
                 //     }
 
                 // }
-                if (set.add(key, key) && testSanity) {
-                    // System.err.println(Arrays.toString(key) + " => "+opIndex);
-                    presentKeys[opIndex] ++;
+                if(!set.add(key, key)) {
+                    System.out.println("Error initializing");
                 }
+                // if (set.add(key, key) && testSanity) {
+                //     // System.err.println(Arrays.toString(key) + " => "+opIndex);
+                //     presentKeys[opIndex] ++;
+                // }
             }
         }
         catch (DimensionLimitException e) {
@@ -268,11 +272,18 @@ public class BenchMark {
         }
 
         results = new int[numberOfThreads];
+        succAdd = new long[numberOfThreads];
+        failAdd = new long[numberOfThreads];
+        succDel = new long[numberOfThreads];
+        failDel = new long[numberOfThreads];
 
         if (testSanity) {
+            System.err.println("testSanity: true");
             presentKeys = new int[keyRange];
             sanityAdds = new int[numberOfThreads][keyRange];
             sanityRemoves = new int[numberOfThreads][keyRange];
+        } else {
+            System.err.println("testSanity: false");
         }
 
         defineSet();
@@ -285,7 +296,7 @@ public class BenchMark {
 
             for (int i = 0; i < threads.length; i ++) {
                 threads[i] = new Thread(new RunOperations(set, i, addPercent, removePercent, keyRange,
-                        dimension, results, sanityAdds, sanityRemoves, false, linearizable, keys));
+                        dimension, results, succAdd, succDel, failAdd, failDel, sanityAdds, sanityRemoves, false, linearizable, keys));
             }
 
             for (Thread thread : threads) {
@@ -351,7 +362,7 @@ public class BenchMark {
 
             for (int i = 0; i < threads.length; i ++) {
                 threads[i] = new Thread(new RunOperations(set, i, addPercent, removePercent, keyRange,
-                        dimension, results, sanityAdds, sanityRemoves, true, linearizable, keys));
+                        dimension, results, succAdd, succDel, failAdd, failDel, sanityAdds, sanityRemoves, true, linearizable, keys));
             }
 
             for (Thread thread : threads) {
@@ -422,13 +433,14 @@ public class BenchMark {
 
     private static void BenchMark() {
         double totalOps = 0, maxOps = 0, minOps;
+        long totalSuccAdd=0, totalSuccDel=0, totalFailAdd=0, totalFailDel=0;
         RunController.startFlag = RunController.stopFlag = false;
         try {
             Thread[] threads = new Thread[numberOfThreads];
 
             for (int i = 0; i < threads.length; i ++) {
                 threads[i] = new Thread(new RunOperations(set, i, addPercent, removePercent, keyRange,
-                        dimension, results, sanityAdds, sanityRemoves, false, linearizable, keys));
+                        dimension, results, succAdd, succDel, failAdd, failDel, sanityAdds, sanityRemoves, false, linearizable, keys));
             }
 
             for (Thread thread : threads) {
@@ -456,8 +468,17 @@ public class BenchMark {
 
         for (int i = 0; i < numberOfThreads; i ++) {
             totalOps += results[i];
+            totalFailAdd += failAdd[i];
+            totalSuccAdd += succAdd[i];
+            totalFailDel += failDel[i];
+            totalSuccDel += succDel[i];
             maxOps = (maxOps < results[i]) ? results[i] : maxOps;
         }
+
+        System.out.println("successful inserts: " + totalSuccAdd);
+        System.out.println("failed inserts: " + totalFailAdd);
+        System.out.println("successful deletes: " + totalSuccDel);
+        System.out.println("failed deletes: " + totalFailDel);
 
         minOps = maxOps;
 
@@ -546,6 +567,7 @@ public class BenchMark {
 
             long memOnFinish = Tools.cleanMem(memTree);
             System.out.printf("Throughput = %.0f Ops/sec\n", throughput);
+            
             System.out.printf("Memory-footprint of operations = %d bytes\n", memOnFinish);
             System.out.printf("Fairness = %.0f percent\n", fairness * 100);
             throughput = throughput/div_factor;

@@ -46,6 +46,7 @@ public class RunOperations implements Runnable {
     Random randKey;
     AbstractIntegerDistribution z;
     int[] results, numberOfAdd, numberOfRemove;
+    long[] succAdd, succDel, failAdd, failDel;
     int[][] sanityAdds, sanityRemoves;
     double[][] keys;
 
@@ -62,7 +63,7 @@ public class RunOperations implements Runnable {
      * @param testSanity
      * @throws IOException
      */
-    public RunOperations(KDTreeADT s, int tId, int aP, int rP, int kR, int dim, int[] results,
+    public RunOperations(KDTreeADT s, int tId, int aP, int rP, int kR, int dim, int[] results, long[] succAdd, long[] succDel, long[] failAdd, long[] failDel, 
             int[][] sanityAdds, int[][] sanityRemoves, boolean testSanity, boolean linearizable, double[][] keys)
             throws IOException {
         this.testSanity = testSanity;
@@ -79,6 +80,10 @@ public class RunOperations implements Runnable {
         this.numberOfOps = 0;
         this.numberOfAdd = new int[kR];
         this.numberOfRemove = new int[kR];
+        this.succAdd = succAdd;
+        this.failAdd = failAdd;
+        this.succDel = succDel;
+        this.failDel = failDel;
         this.results = results;
         this.sanityAdds = sanityAdds;
         this.sanityRemoves = sanityRemoves;
@@ -88,15 +93,22 @@ public class RunOperations implements Runnable {
     private void benchMarkRun() {
         while ( ! RunController.startFlag);
 
-        while ( ! RunController.stopFlag) {
+        long succ_ins = 0;
+        long succ_del = 0;
+        long fail_ins = 0;
+        long fail_del = 0;
+
+        while ( ! RunController.stopFlag) {// calculate number of successful operations
             int chooseOperation = randOp.nextInt(100);
             double[] key = keys[randOp.nextInt(keyRange)];
             try {
                 if (chooseOperation < addPercent) {
-                    set.add(key, key);
+                    if(set.add(key, key)) succ_ins++;
+                    else fail_ins++;
                 }
-                else if (chooseOperation < removePercent) {
-                    set.remove(key);
+                else if (chooseOperation < addPercent+removePercent) {
+                    if(set.remove(key)) succ_del++;
+                    else fail_del++;
                 }
                 else {
                     set.nearest(key, linearizable);
@@ -109,6 +121,11 @@ public class RunOperations implements Runnable {
         }
 
         results[threadId] = numberOfOps;
+        succAdd[threadId] = succ_ins;
+        failAdd[threadId] = fail_ins;
+        succDel[threadId] = succ_del;
+        failDel[threadId] = fail_del;
+
     }
 
     private void sanityRun() {
